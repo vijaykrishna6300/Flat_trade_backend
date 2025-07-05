@@ -1,4 +1,4 @@
 fastapi
 uvicorn
-pyotp
-requests
+httpx
+python-dotenv
