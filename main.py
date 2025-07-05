@@ -1,22 +1,41 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
-import traceback
+import httpx
+import pyotp
 
 app = FastAPI()
 
-class LoginRequest(BaseModel):
+class LoginData(BaseModel):
     client_code: str
     password: str
     totp_secret: str
     api_key: str
 
 @app.post("/login")
-def login(data: LoginRequest):
+async def login(data: LoginData):
+    # Generate TOTP using secret
+    totp = pyotp.TOTP(data.totp_secret).now()
+
+    # Prepare request to Flattrade API
+    payload = {
+        "clientCode": data.client_code,
+        "password": data.password,
+        "totp": totp
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-API-KEY": data.api_key
+    }
+
     try:
-        # 🔒 Your Flattrade login logic goes here
-        # For now just return dummy success
-        return {"message": "Login successful"}
-    
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://auth.flattrade.in/api/login",
+                json=payload,
+                headers=headers
+            )
+        return response.json()
     except Exception as e:
-        print("ERROR OCCURRED:\n", traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"error": str(e)}
