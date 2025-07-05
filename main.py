@@ -1,7 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import pyotp
-import requests
+import traceback
 
 app = FastAPI()
 
@@ -13,20 +12,11 @@ class LoginRequest(BaseModel):
 
 @app.post("/login")
 def login(data: LoginRequest):
-    totp = pyotp.TOTP(data.totp_secret).now()
-
-    payload = {
-        "clientCode": data.client_code,
-        "password": data.password,
-        "totp": totp
-    }
-
-    headers = {
-        "Content-Type": "application/json",
-        "X-Api-Key": data.api_key
-    }
-
-    response = requests.post("https://authapi.flattrade.in/trade/authenticate",
-                             json=payload, headers=headers)
-
-    return response.json()
+    try:
+        # 🔒 Your Flattrade login logic goes here
+        # For now just return dummy success
+        return {"message": "Login successful"}
+    
+    except Exception as e:
+        print("ERROR OCCURRED:\n", traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
